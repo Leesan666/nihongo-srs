@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>にほんご SRS — 碎片时间日语复习</title>
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-muted: #f0f0f3;
+  --brand: #6d4aff;
+  --brand-soft: #ede9ff;
+  --ok: #00a884;
+  --ok-soft: #e6f7f2;
+  --warn: #d97706;
+  --warn-soft: #fef3e2;
+  --text: #1a1a2e;
+  --text-muted: #6b6b80;
+  --text-subtle: #9a9aae;
+  --border: #e0e0e8;
+  --border-strong: #c8c8d4;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-full: 999px;
+  --font: -apple-system, "PingFang SC", "Noto Sans CJK SC", "Hiragino Sans", "Microsoft YaHei", sans-serif;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14141e;
+    --surface: #1e1e2a;
+    --surface-muted: #28283a;
+    --brand: #9d8aff;
+    --brand-soft: #2a2540;
+    --ok: #2dd4a8;
+    --ok-soft: #1a2e28;
+    --warn: #f0a040;
+    --warn-soft: #2e2418;
+    --text: #ececf4;
+    --text-muted: #a0a0b8;
+    --text-subtle: #6e6e85;
+    --border: #313140;
+    --border-strong: #44445a;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
+  }
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.header {
+  padding: 16px 20px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.header h1 span { color: var(--brand); }
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn);
+  background: var(--warn-soft);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* Tab navigation */
+.tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-subtle);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+}
+
+/* Content area */
+.content { flex: 1; padding: 0 20px 100px; }
+
+/* Views */
+.view { display: none; }
+.view.active { display: block; }
+
+/* Review view */
+.review-summary {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.review-summary h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.review-stats {
+  display: flex;
+  gap: 12px;
+}
+.review-stat {
+  flex: 1;
+  text-align: center;
+  padding: 10px 8px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+}
+.review-stat .num {
+  font-size: 22px;
+  font-weight: 700;
+  display: block;
+}
+.review-stat .num.due { color: var(--brand); }
+.review-stat .num.new { color: var(--ok); }
+.review-stat .num.done { color: var(--text-subtle); }
+.review-stat .label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Flashcard */
+.card-container {
+  perspective: 1000px;
+  margin-bottom: 16px;
+}
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 40px 24px;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  transition: transform 0.3s;
+  border: 1px solid var(--border);
+  position: relative;
+}
+.card-tag {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  background: var(--surface-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+.card-tag.new-tag { color: var(--ok); background: var(--ok-soft); }
+.card-kanji {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+.card-kana {
+  font-size: 20px;
+  color: var(--brand);
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+.card-meaning {
+  font-size: 18px;
+  color: var(--text);
+  margin-bottom: 12px;
+  font-weight: 600;
+  display: none;
+}
+.card-example {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-top: 8px;
+  display: none;
+}
+.card-example strong { color: var(--text); }
+.card.flipped .card-meaning,
+.card.flipped .card-example { display: block; }
+.card.flipped .card-kana { display: block; }
+.card-hint {
+  font-size: 12px;
+  color: var(--text-subtle);
+  margin-top: 16px;
+}
+.card-speak {
+  margin-top: 12px;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand);
+  color: var(--brand);
+  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.12s;
+}
+.card-speak:active { transform: scale(0.95); }
+.word-speak-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.word-speak-btn:active { opacity: 1; }
+
+/* Review buttons */
+.review-btns {
+  display: none;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.review-btns.show { display: flex; }
+.review-btn {
+  flex: 1;
+  padding: 14px 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: var(--font);
+}
+.btn-wrong {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border: 1.5px solid var(--warn);
+}
+.btn-wrong:active { transform: scale(0.96); }
+.btn-right {
+  background: var(--brand);
+  color: #fff;
+}
+.btn-right:active { transform: scale(0.96); }
+.btn-skip {
+  flex: 0.6;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+/* Start button */
+.start-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--brand);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  box-shadow: var(--shadow);
+}
+.start-btn:active { transform: scale(0.98); }
+.start-btn:disabled {
+  background: var(--border-strong);
+  cursor: not-allowed;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-subtle);
+}
+.empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+.empty-state p { font-size: 14px; line-height: 1.6; }
+
+/* List view */
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.list-header h2 { font-size: 16px; font-weight: 600; }
+.add-btn {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.word-list {
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.word-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.word-item:last-child { border-bottom: none; }
+.word-info { flex: 1; }
+.word-kanji { font-size: 16px; font-weight: 600; }
+.word-kana { font-size: 12px; color: var(--brand); margin-left: 8px; }
+.word-meaning { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.word-stage {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.stage-new { background: var(--ok-soft); color: var(--ok); }
+.stage-learning { background: var(--warn-soft); color: var(--warn); }
+.stage-mature { background: var(--brand-soft); color: var(--brand); }
+
+/* Add form */
+.add-form {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  display: none;
+}
+.add-form.show { display: block; }
+.add-form input,
+.add-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  background: var(--surface-muted);
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.add-form input:focus,
+.add-form textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+.add-form textarea { resize: none; height: 60px; }
+.add-form-row { display: flex; gap: 10px; }
+.add-form-row input { flex: 1; }
+.form-actions { display: flex; gap: 10px; margin-top: 4px; }
+.form-actions button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+}
+.btn-save { background: var(--brand); color: #fff; }
+.btn-cancel { background: var(--surface-muted); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* Stats view */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.stat-card .big-num {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--brand);
+}
+.stat-card .stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.review-heatmap {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.review-heatmap h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--surface-muted);
+}
+.heatmap-cell.l1 { background: var(--brand-soft); }
+.heatmap-cell.l2 { background: rgba(109,74,255,0.4); }
+.heatmap-cell.l3 { background: rgba(109,74,255,0.7); }
+.heatmap-cell.l4 { background: var(--brand); }
+.heatmap-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-subtle);
+  margin-top: 8px;
+}
+
+/* Resources view */
+.resources { display: flex; flex-direction: column; gap: 12px; }
+.res-section {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.res-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.res-section h3 .emoji { font-size: 16px; }
+.res-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.res-item:last-child { border-bottom: none; }
+.res-item a {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+}
+.res-item a:active { opacity: 0.6; }
+.res-item p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+.res-tip {
+  font-size: 12px;
+  color: var(--text);
+  background: var(--brand-soft);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* Settings */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-label { font-size: 14px; }
+.settings-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--brand);
+}
+.settings-input {
+  width: 60px;
+  padding: 6px 8px;
+  text-align: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-family: var(--font);
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 100;
+  pointer-events: none;
+}
+.toast.show { opacity: 0.9; }
+
+/* Session complete */
+.session-complete {
+  text-align: center;
+  padding: 40px 20px;
+}
+.session-complete .check {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.session-complete h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.session-complete p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>にほんご <span>SRS</span></h1>
+    <div class="streak-badge" id="streakBadge">🔥 0</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="review">复习</div>
+    <div class="tab" data-tab="list">词库</div>
+    <div class="tab" data-tab="stats">统计</div>
+    <div class="tab" data-tab="resources">资源</div>
+  </div>
+
+  <div class="content">
+    <!-- Review View -->
+    <div class="view active" id="view-review">
+      <div id="reviewHome">
+        <div class="review-summary">
+          <h2>今日待复习</h2>
+          <div class="review-stats">
+            <div class="review-stat">
+              <span class="num due" id="dueCount">0</span>
+              <span class="label">到期复习</span>
+            </div>
+            <div class="review-stat">
+              <span class="num new" id="newCount">0</span>
+              <span class="label">新词可用</span>
+            </div>
+            <div class="review-stat">
+              <span class="num done" id="doneCount">0</span>
+              <span class="label">今日已完成</span>
+            </div>
+          </div>
+        </div>
+        <button class="start-btn" id="startBtn" onclick="startReview()">开始复习</button>
+      </div>
+
+      <div id="reviewSession" style="display:none">
+        <div class="card-container">
+          <div class="card" id="flashcard" onclick="flipCard()">
+            <span class="card-tag" id="cardTag"></span>
+            <div class="card-kanji" id="cardKanji"></div>
+            <div class="card-kana" id="cardKana"></div>
+            <div class="card-meaning" id="cardMeaning"></div>
+            <div class="card-example" id="cardExample"></div>
+            <div class="card-hint" id="cardHint">点击卡片查看释义</div>
+            <button class="card-speak" id="cardSpeak" onclick="event.stopPropagation(); speakCurrent()">🔊 听读音</button>
+          </div>
+        </div>
+        <div class="review-btns" id="reviewBtns">
+          <button class="review-btn btn-wrong" onclick="reviewCard(false)">没记住</button>
+          <button class="review-btn btn-right" onclick="reviewCard(true)">记住了</button>
+        </div>
+      </div>
+
+      <div id="sessionComplete" style="display:none">
+        <div class="session-complete">
+          <div class="check">✅</div>
+          <h2>今天的复习完成了！</h2>
+          <p id="sessionSummary"></p>
+          <button class="start-btn" onclick="showReviewHome()">返回</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- List View -->
+    <div class="view" id="view-list">
+      <div class="list-header">
+        <h2>我的词库</h2>
+        <button class="add-btn" onclick="toggleAddForm()">+ 添加</button>
+      </div>
+      <div class="add-form" id="addForm">
+        <input type="text" id="inputKanji" placeholder="汉字（如：勉強）">
+        <input type="text" id="inputKana" placeholder="假名（如：べんきょう）">
+        <input type="text" id="inputMeaning" placeholder="中文释义（如：学习）">
+        <textarea id="inputExample" placeholder="例句（可选）"></textarea>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="toggleAddForm()">取消</button>
+          <button class="btn-save" onclick="addWord()">保存</button>
+        </div>
+      </div>
+      <div class="word-list" id="wordList"></div>
+    </div>
+
+    <!-- Stats View -->
+    <div class="view" id="view-stats">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="big-num" id="statTotal">0</div>
+          <div class="stat-label">总词数</div>
+        </div>
+        <div class="stat-card">
+          <div class="big-num" id="statLearned" style="color:var(--ok)">0</div>
+          <div class="stat-label">已学</div>
+        </div>
+        <div class="stat-card">
+          <div class="big-num" id="statStreak" style="color:var(--warn)">0</div>
+          <div class="stat-label">连续天数</div>
+        </div>
+        <div class="stat-card">
+          <div class="big-num" id="statRetention" style="color:var(--text-subtle)">—</div>
+          <div class="stat-label">记忆率</div>
+        </div>
+      </div>
+      <div class="review-heatmap">
+        <h3>最近30天活跃度</h3>
+        <div class="heatmap-grid" id="heatmap"></div>
+        <div class="heatmap-labels">
+          <span>30天前</span>
+          <span>今天</span>
+        </div>
+      </div>
+      <div class="review-summary">
+        <h2>设置</h2>
+        <div class="settings-row">
+          <span class="settings-label">每日新词上限</span>
+          <input type="number" class="settings-input" id="newPerDay" value="10" min="1" max="50" onchange="saveSettings()">
+        </div>
+        <div class="settings-row">
+          <span class="settings-label">已学词汇总数</span>
+          <span class="settings-value" id="settingsLearned">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources View -->
+    <div class="view" id="view-resources">
+      <div class="resources">
+        <div class="res-section">
+          <h3><span class="emoji">🔁</span> SRS 词汇（国内可用）</h3>
+          <div class="res-item">
+            <div>
+              <a href="https://www.mojidict.com" target="_blank">MOJi辞書</a>
+              <p>国内最流行的日语词典App。内置SRS复习功能，支持手动加词。手机App体验最好。</p>
+            </div>
+          </div>
+          <div class="res-item">
+            <div>
+              <a href="https://www.bilibili.com/video/BV1zwLBz8Ei8" target="_blank">B站日语全套教程（268集）</a>
+              <p>免费完整零基础教程，通勤午休碎片时间看。搜「日语入门」还有更多。</p>
+            </div>
+          </div>
+          <div class="res-tip">这个工具本身就是你的SRS引擎。每天在这里刷卡片 + 遇到生词随手加进词库，比任何App都贴合你的节奏。</div>
+        </div>
+
+        <div class="res-section">
+          <h3><span class="emoji">👂</span> 听力（通勤用 · 国内可用）</h3>
+          <div class="res-item">
+            <div>
+              <a href="https://www.ximalaya.com" target="_blank">喜马拉雅 — 树先生日本语</a>
+              <p>搜「树先生日本语」，有JLPT N5-N2真题听力，带原文。通勤路上听，听不懂看原文。</p>
+            </div>
+          </div>
+          <div class="res-item">
+            <div>
+              <a href="https://www.ximalaya.com" target="_blank">喜马拉雅 — 50天逐级突破听力</a>
+              <p>搜「50天逐级突破N5N4N3」，分级听力训练，适合碎片时间。</p>
+            </div>
+          </div>
+          <div class="res-item">
+            <div>
+              <a href="https://search.bilibili.com/all?keyword=日语听力N5" target="_blank">B站 — 日语听力</a>
+              <p>搜「日语听力 N5/N4」，大量免费听力视频，有些带中日双语字幕。</p>
+            </div>
+          </div>
+          <div class="res-tip">听力不需要全听懂。目标是让耳朵适应日语节奏，听不懂的部分凭语感猜，不暂停查词。</div>
+        </div>
+
+        <div class="res-section">
+          <h3><span class="emoji">📖</span> 语法（午休用 · 国内可用）</h3>
+          <div class="res-item">
+            <div>
+              <a href="https://search.bilibili.com/all?keyword=日语语法入门" target="_blank">B站 — 日语语法系列</a>
+              <p>搜「日语语法入门」，有很多UP主的系列教程。每次只看一个语法点（3-5分钟）。</p>
+            </div>
+          </div>
+          <div class="res-item">
+            <div>
+              <a href="https://search.bilibili.com/all?keyword=标日语法讲解" target="_blank">B站 — 标日语法讲解</a>
+              <p>搜「标日语法」，有按课讲解的视频。遇到不懂的语法点翻对应课看，不要从头学。</p>
+            </div>
+          </div>
+          <div class="res-tip">语法是中文母语者唯一没有先天优势的部分，必须主动学。标日教材当字典用，不要当课本从头啃。</div>
+        </div>
+
+        <div class="res-section">
+          <h3><span class="emoji">🤖</span> AI 语音对话（睡前用 · 国内可用）</h3>
+          <div class="res-item">
+            <div>
+              <a href="https://www.doubao.com" target="_blank">豆包（手机App）</a>
+              <p>字节跳动AI，手机App支持语音对话。告诉它「用简单日语和我聊天，我犯错时用中文纠正」。</p>
+            </div>
+          </div>
+          <div class="res-item">
+            <div>
+              <a href="https://tongyi.aliyun.com" target="_blank">通义千问（手机App）</a>
+              <p>阿里AI，手机App有语音通话功能。同样设prompt让它用日语对话练习。</p>
+            </div>
+          </div>
+          <div class="res-tip">关键提示：AI语音对话必须用手机App，网页版没有语音。豆包和通义千问的语音质量已经很好，完全够用。每天5分钟 &gt; 每周上课1小时。</div>
+        </div>
+
+        <div class="res-section">
+          <h3><span class="emoji">📚</span> 阅读（进阶后 · 国内可用）</h3>
+          <div class="res-item">
+            <div>
+              <a href="https://www.mojidict.com" target="_blank">MOJi阅读</a>
+              <p>MOJi辞書App内置分级阅读，点词即查。N4水平以上开始用。</p>
+            </div>
+          </div>
+          <div class="res-item">
+            <div>
+              <a href="https://jp.hjenglish.com" target="_blank">沪江日语</a>
+              <p>国内老牌日语学习站，有分级阅读材料和语法讲解，全部中文界面。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== SRS Engine (Simplified SM-2) ======
+const INTERVALS = [1, 1, 2, 4, 7, 14, 30, 60, 120, 240];
+
+function getCardStage(card) {
+  if (!card.reviews || card.reviews === 0) return 'new';
+  if (card.interval < 7) return 'learning';
+  return 'mature';
+}
+
+function scheduleCard(card, correct) {
+  if (correct) {
+    const newStage = Math.min((card.srsStage || 0) + 1, INTERVALS.length - 1);
+    card.srsStage = newStage;
+    card.interval = INTERVALS[newStage];
+  } else {
+    card.srsStage = Math.max(0, (card.srsStage || 0) - 1);
+    card.interval = 1;
+  }
+  card.lastReview = Date.now();
+  card.nextReview = Date.now() + card.interval * 86400000;
+  card.reviews = (card.reviews || 0) + 1;
+  if (correct) card.correctCount = (card.correctCount || 0) + 1;
+  else card.wrongCount = (card.wrongCount || 0) + 1;
+}
+
+// ====== Data Layer ======
+const STORAGE_KEY = 'nihongo_srs_data';
+
+function loadData() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (data) return data;
+  } catch(e) {}
+  return { cards: [], settings: { newPerDay: 10 }, stats: { streak: 0, lastStudyDate: null, dailyLog: {}, totalReviews: 0 } };
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// ====== Starter Vocabulary (JLPT N5) ======
+const STARTER_WORDS = [
+  { kanji: '勉強', kana: 'べんきょう', meaning: '学习', example: '毎日日本語を勉強します。' },
+  { kanji: '会社', kana: 'かいしゃ', meaning: '公司', example: '会社に勤めています。' },
+  { kanji: '仕事', kana: 'しごと', meaning: '工作', example: '仕事は忙しいです。' },
+  { kanji: '電話', kana: 'でんわ', meaning: '电话', example: '電話をかけます。' },
+  { kanji: '通信', kana: 'つうしん', meaning: '通信', example: '通信技術の進歩。' },
+  { kanji: '技術', kana: 'ぎじゅつ', meaning: '技术', example: 'AI技術を活用する。' },
+  { kanji: '開発', kana: 'かいはつ', meaning: '开发', example: '新しいソフトを開発する。' },
+  { kanji: '市場', kana: 'しじょう', meaning: '市场', example: '日本市場に進出する。' },
+  { kanji: '計画', kana: 'けいかく', meaning: '计划', example: '来年の計画を立てる。' },
+  { kanji: '問題', kana: 'もんだい', meaning: '问题', example: '問題を解決する。' },
+  { kanji: '重要', kana: 'じゅうよう', meaning: '重要', example: '重要な会議がある。' },
+  { kanji: '将来', kana: 'しょうらい', meaning: '将来', example: '将来の夢を話す。' },
+  { kanji: '経験', kana: 'けいけん', meaning: '经验', example: '豊富な経験がある。' },
+  { kanji: '必要', kana: 'ひつよう', meaning: '必要', example: 'もっと練習が必要です。' },
+  { kanji: '質問', kana: 'しつもん', meaning: '提问', example: '質問があります。' },
+  { kanji: '説明', kana: 'せつめい', meaning: '说明', example: 'もう一度説明してください。' },
+  { kanji: '約束', kana: 'やくそく', meaning: '约定', example: '時間通りに約束を守る。' },
+  { kanji: '関係', kana: 'かんけい', meaning: '关系', example: '両国の関係。' },
+  { kanji: '効果', kana: 'こうか', meaning: '效果', example: '高い効果がある。' },
+  { kanji: '目標', kana: 'もくひょう', meaning: '目标', example: '目標を達成する。' },
+  { kanji: '結果', kana: 'けっか', meaning: '结果', example: '結果を報告する。' },
+  { kanji: '原因', kana: 'げんいん', meaning: '原因', example: '事故の原因を調べる。' },
+  { kanji: '内容', kana: 'ないよう', meaning: '内容', example: '会議の内容をメモする。' },
+  { kanji: '理由', kana: 'りゆう', meaning: '理由', example: '理由を説明する。' },
+  { kanji: '意味', kana: 'いみ', meaning: '意思', example: 'この言葉の意味は？' },
+  { kanji: '会議', kana: 'かいぎ', meaning: '会议', example: '明日会議があります。' },
+  { kanji: '準備', kana: 'じゅんび', meaning: '准备', example: '準備ができました。' },
+  { kanji: '確認', kana: 'かくにん', meaning: '确认', example: 'もう一度確認します。' },
+  { kanji: '提出', kana: 'ていしゅつ', meaning: '提交', example: '書類を提出する。' },
+  { kanji: '利用', kana: 'りよう', meaning: '利用', example: 'AIを利用する。' },
+];
+
+// ====== App State ======
+let state = loadData();
+
+// Initialize starter words if first time
+if (state.cards.length === 0) {
+  STARTER_WORDS.forEach(w => {
+    state.cards.push({
+      ...w,
+      id: Date.now() + Math.random(),
+      srsStage: 0,
+      interval: 0,
+      nextReview: 0,
+      lastReview: 0,
+      reviews: 0,
+      correctCount: 0,
+      wrongCount: 0
+    });
+  });
+  saveData();
+}
+
+let session = {
+  queue: [],
+  currentIndex: 0,
+  doneCount: 0,
+  newStudied: 0,
+  reviewedCorrect: 0,
+  reviewedTotal: 0
+};
+
+// ====== Text-to-Speech (发音) ======
+function speak(text) {
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 0.85;
+    const voices = speechSynthesis.getVoices();
+    const jpVoice = voices.find(v => v.lang.startsWith('ja'));
+    if (jpVoice) u.voice = jpVoice;
+    speechSynthesis.speak(u);
+  } else {
+    showToast('当前浏览器不支持语音朗读');
+  }
+}
+function speakCurrent() {
+  const card = session.queue[session.currentIndex];
+  if (card) speak(card.kana);
+}
+// 部分浏览器需要先加载语音列表
+if ('speechSynthesis' in window) {
+  speechSynthesis.getVoices();
+  speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+}
+
+// ====== UI Logic ======
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+  document.getElementById(`view-${tabName}`).classList.add('active');
+  if (tabName === 'list') renderWordList();
+  if (tabName === 'stats') renderStats();
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// ====== Review Logic ======
+function getDueCards() {
+  const now = Date.now();
+  return state.cards.filter(c => c.nextReview <= now && c.reviews > 0);
+}
+
+function getNewCardsAvailable() {
+  const today = new Date().toDateString();
+  const newToday = state.stats.dailyLog[today]?.newStudied || 0;
+  const limit = state.settings.newPerDay;
+  const available = state.cards.filter(c => c.reviews === 0).length;
+  return Math.min(available, Math.max(0, limit - newToday));
+}
+
+function updateReviewHome() {
+  const due = getDueCards().length;
+  const newAvail = getNewCardsAvailable();
+  const today = new Date().toDateString();
+  const done = state.stats.dailyLog[today]?.totalReviews || 0;
+  document.getElementById('dueCount').textContent = due;
+  document.getElementById('newCount').textContent = newAvail;
+  document.getElementById('doneCount').textContent = done;
+  const btn = document.getElementById('startBtn');
+  if (due === 0 && newAvail === 0) {
+    btn.disabled = true;
+    btn.textContent = '今日已完成，明天见！';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `开始复习（${due + newAvail}张）`;
+  }
+}
+
+function showReviewHome() {
+  document.getElementById('reviewHome').style.display = 'block';
+  document.getElementById('reviewSession').style.display = 'none';
+  document.getElementById('sessionComplete').style.display = 'none';
+  updateReviewHome();
+}
+
+function startReview() {
+  const due = getDueCards();
+  const newAvail = getNewCardsAvailable();
+  const newCards = state.cards.filter(c => c.reviews === 0).slice(0, newAvail);
+  session.queue = [...due, ...newCards];
+  // Shuffle
+  session.queue.sort(() => Math.random() - 0.5);
+  session.currentIndex = 0;
+  session.doneCount = 0;
+  session.newStudied = 0;
+  session.reviewedCorrect = 0;
+  session.reviewedTotal = 0;
+
+  if (session.queue.length === 0) {
+    showToast('没有需要复习的卡片');
+    return;
+  }
+
+  document.getElementById('reviewHome').style.display = 'none';
+  document.getElementById('reviewSession').style.display = 'block';
+  showCurrentCard();
+}
+
+function showCurrentCard() {
+  if (session.currentIndex >= session.queue.length) {
+    completeSession();
+    return;
+  }
+  const card = session.queue[session.currentIndex];
+  const stage = getCardStage(card);
+  const tag = document.getElementById('cardTag');
+  if (stage === 'new') {
+    tag.textContent = '新词';
+    tag.className = 'card-tag new-tag';
+  } else {
+    tag.textContent = `复习 · 第${card.reviews}次`;
+    tag.className = 'card-tag';
+  }
+  document.getElementById('cardKanji').textContent = card.kanji;
+  document.getElementById('cardKana').textContent = card.kana;
+  document.getElementById('cardMeaning').textContent = card.meaning;
+  document.getElementById('cardExample').innerHTML = card.example ? `<strong>例：</strong>${card.example}` : '';
+  const flashcard = document.getElementById('flashcard');
+  flashcard.classList.remove('flipped');
+  document.getElementById('cardHint').textContent = '点击卡片查看释义';
+  document.getElementById('reviewBtns').classList.remove('show');
+  setTimeout(() => speak(card.kana), 300);
+}
+
+function flipCard() {
+  const flashcard = document.getElementById('flashcard');
+  if (!flashcard.classList.contains('flipped')) {
+    flashcard.classList.add('flipped');
+    document.getElementById('cardHint').textContent = '';
+    document.getElementById('reviewBtns').classList.add('show');
+  }
+}
+
+function reviewCard(correct) {
+  const card = session.queue[session.currentIndex];
+  const wasNew = card.reviews === 0;
+  scheduleCard(card, correct);
+
+  session.doneCount++;
+  if (wasNew) session.newStudied++;
+  session.reviewedTotal++;
+  if (correct) session.reviewedCorrect++;
+
+  // Update daily log
+  const today = new Date().toDateString();
+  if (!state.stats.dailyLog[today]) {
+    state.stats.dailyLog[today] = { totalReviews: 0, newStudied: 0 };
+  }
+  state.stats.dailyLog[today].totalReviews++;
+  if (wasNew) state.stats.dailyLog[today].newStudied++;
+
+  // Update streak
+  updateStreak();
+  state.stats.totalReviews++;
+  saveData();
+
+  session.currentIndex++;
+  setTimeout(showCurrentCard, 200);
+}
+
+function updateStreak() {
+  const today = new Date().toDateString();
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (state.stats.lastStudyDate === today) return;
+  if (state.stats.lastStudyDate === yesterday) {
+    state.stats.streak++;
+  } else {
+    state.stats.streak = 1;
+  }
+  state.stats.lastStudyDate = today;
+}
+
+function completeSession() {
+  document.getElementById('reviewSession').style.display = 'none';
+  document.getElementById('sessionComplete').style.display = 'block';
+  const accuracy = session.reviewedTotal > 0 ? Math.round(session.reviewedCorrect / session.reviewedTotal * 100) : 100;
+  document.getElementById('sessionSummary').innerHTML =
+    `完成 ${session.doneCount} 张卡片<br>新词 ${session.newStudied} · 正确率 ${accuracy}%`;
+  document.getElementById('streakBadge').textContent = `🔥 ${state.stats.streak}`;
+}
+
+// ====== Word List ======
+function renderWordList() {
+  const list = document.getElementById('wordList');
+  if (state.cards.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📭</div><p>词库为空，点击"添加"创建第一张卡片</p></div>';
+    return;
+  }
+  list.innerHTML = state.cards.map(card => {
+    const stage = getCardStage(card);
+    const stageClass = stage === 'new' ? 'stage-new' : (stage === 'learning' ? 'stage-learning' : 'stage-mature');
+    const stageText = stage === 'new' ? '新' : (stage === 'learning' ? '学习中' : '已掌握');
+    return `
+      <div class="word-item">
+        <div class="word-info">
+          <span class="word-kanji">${card.kanji}</span>
+          <span class="word-kana">${card.kana}</span>
+          <div class="word-meaning">${card.meaning}${card.example ? ' · ' + card.example : ''}</div>
+        </div>
+        <button class="word-speak-btn" onclick="speak('${card.kana}')">🔊</button>
+        <span class="word-stage ${stageClass}">${stageText}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleAddForm() {
+  const form = document.getElementById('addForm');
+  form.classList.toggle('show');
+  if (!form.classList.contains('show')) {
+    document.getElementById('inputKanji').value = '';
+    document.getElementById('inputKana').value = '';
+    document.getElementById('inputMeaning').value = '';
+    document.getElementById('inputExample').value = '';
+  }
+}
+
+function addWord() {
+  const kanji = document.getElementById('inputKanji').value.trim();
+  const kana = document.getElementById('inputKana').value.trim();
+  const meaning = document.getElementById('inputMeaning').value.trim();
+  const example = document.getElementById('inputExample').value.trim();
+  if (!kanji || !kana || !meaning) {
+    showToast('请填写汉字、假名和释义');
+    return;
+  }
+  state.cards.push({
+    id: Date.now(),
+    kanji, kana, meaning, example,
+    srsStage: 0, interval: 0, nextReview: 0, lastReview: 0,
+    reviews: 0, correctCount: 0, wrongCount: 0
+  });
+  saveData();
+  toggleAddForm();
+  renderWordList();
+  showToast('已添加');
+}
+
+// ====== Stats ======
+function renderStats() {
+  const total = state.cards.length;
+  const learned = state.cards.filter(c => c.reviews > 0).length;
+  const totalReviews = state.cards.reduce((s, c) => s + (c.correctCount || 0) + (c.wrongCount || 0), 0);
+  const correct = state.cards.reduce((s, c) => s + (c.correctCount || 0), 0);
+  const retention = totalReviews > 0 ? Math.round(correct / totalReviews * 100) + '%' : '—';
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statLearned').textContent = learned;
+  document.getElementById('statStreak').textContent = state.stats.streak;
+  document.getElementById('statRetention').textContent = retention;
+  document.getElementById('settingsLearned').textContent = learned;
+  document.getElementById('newPerDay').value = state.settings.newPerDay;
+
+  // Heatmap
+  const heatmap = document.getElementById('heatmap');
+  const days = 30;
+  let html = '';
+  for (let i = days - 1; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 86400000).toDateString();
+    const reviews = state.stats.dailyLog[date]?.totalReviews || 0;
+    let level = '';
+    if (reviews > 0) level = 'l1';
+    if (reviews >= 5) level = 'l2';
+    if (reviews >= 15) level = 'l3';
+    if (reviews >= 30) level = 'l4';
+    html += `<div class="heatmap-cell ${level}"></div>`;
+  }
+  heatmap.innerHTML = html;
+}
+
+function saveSettings() {
+  state.settings.newPerDay = parseInt(document.getElementById('newPerDay').value) || 10;
+  saveData();
+  showToast('已保存');
+}
+
+// ====== Toast ======
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ====== Init ======
+document.getElementById('streakBadge').textContent = `🔥 ${state.stats.streak}`;
+showReviewHome();
+</script>
+</body>
+</html>
