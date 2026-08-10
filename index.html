@@ -100,7 +100,7 @@ body {
   flex: 1;
   padding: 10px 0;
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-subtle);
   border-bottom: 2px solid transparent;
@@ -730,6 +730,126 @@ body {
   font-size: 11px;
   color: var(--text-subtle);
 }
+
+/* ====== 発音规则 Module ====== */
+.pron-accordion {
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+.pron-item { border-bottom: 1px solid var(--border); }
+.pron-item:last-child { border-bottom: none; }
+.pron-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pron-header:active { background: var(--surface-muted); }
+.pron-icon { font-size: 20px; flex-shrink: 0; }
+.pron-title { flex: 1; font-size: 15px; font-weight: 600; }
+.pron-arrow {
+  font-size: 12px;
+  color: var(--text-subtle);
+  transition: transform 0.2s;
+}
+.pron-item.open .pron-arrow { transform: rotate(90deg); }
+.pron-body { display: none; padding: 0 16px 16px; }
+.pron-item.open .pron-body { display: block; }
+.pron-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.pron-rule {
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.pron-rule-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  margin-bottom: 6px;
+}
+.pron-rule-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.pron-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pron-example {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 4px 8px 4px 12px;
+}
+.pron-ex-word { font-size: 14px; font-weight: 600; }
+.pron-ex-meaning { font-size: 11px; color: var(--text-muted); }
+.pron-ex-btn {
+  background: var(--brand-soft);
+  border: none;
+  color: var(--brand);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pron-ex-btn:active { transform: scale(0.9); }
+.pron-tip {
+  font-size: 12px;
+  color: var(--text);
+  background: var(--brand-soft);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.pron-pitch-demo {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin: 8px 0;
+  height: 40px;
+}
+.pron-pitch-bar {
+  width: 30px;
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+}
+.pron-pitch-bar.high {
+  background: var(--brand);
+  color: #fff;
+  height: 40px;
+}
+.pron-pitch-bar.low {
+  background: var(--border-strong);
+  color: var(--text-muted);
+  height: 24px;
+}
 </style>
 </head>
 <body>
@@ -742,6 +862,7 @@ body {
   <div class="tabs">
     <div class="tab active" data-tab="review">复习</div>
     <div class="tab" data-tab="kana">五十音</div>
+    <div class="tab" data-tab="pron">発音</div>
     <div class="tab" data-tab="list">词库</div>
     <div class="tab" data-tab="stats">统计</div>
     <div class="tab" data-tab="resources">资源</div>
@@ -864,6 +985,11 @@ body {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Pronunciation View -->
+    <div class="view" id="view-pron">
+      <div id="pronContent"></div>
     </div>
 
     <!-- List View -->
@@ -1167,6 +1293,7 @@ function switchTab(tabName) {
     if (kanaMode === 'chart') renderKanaChart();
     else showKanaHome();
   }
+  if (tabName === 'pron') renderPronunciation();
 }
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1739,6 +1866,243 @@ function completeKanaSession() {
   const accuracy = kanaSession.reviewedTotal > 0 ? Math.round(kanaSession.reviewedCorrect / kanaSession.reviewedTotal * 100) : 100;
   document.getElementById('kanaSessionSummary').innerHTML =
     `完成 ${kanaSession.doneCount} 个字符<br>新学 ${kanaSession.newStudied} · 正确率 ${accuracy}%`;
+}
+
+// ====== 発音规则 Module ======
+const PRONUNCIATION_RULES = [
+  {
+    id: 'vowels',
+    title: '母音（元音）',
+    icon: '🗣️',
+    summary: '日语只有5个元音，是所有发音的基础',
+    rules: [
+      {
+        name: '五个元音的口型',
+        desc: 'あ(a)口型最大，い(i)嘴角拉开，う(u)嘴唇微收不突出，え(e)口型半开，お(o)嘴唇收圆。日语元音发音时口型变化小，不像汉语那样明显。',
+        examples: [
+          { word: 'あい', meaning: '爱' },
+          { word: 'うえ', meaning: '上面' },
+          { word: 'おはよう', meaning: '早上好' }
+        ]
+      },
+      {
+        name: 'う音的特殊性',
+        desc: 'う音嘴唇微收但不突出，与汉语的"乌"完全不同。发う时嘴唇几乎不拢圆，这是日语元音最独特的地方，也是中国人最容易发错的音。',
+        examples: [
+          { word: 'うみ', meaning: '海' },
+          { word: 'くつ', meaning: '鞋' }
+        ]
+      }
+    ],
+    tip: '练习方法：对着镜子发5个元音，确保口型变化最小。日语发音的核心是"口型小、用力轻"。'
+  },
+  {
+    id: 'voiced',
+    title: '浊音·半浊音',
+    icon: '💨',
+    summary: '在清音上加两点（゛）或圆圈（゜）形成',
+    rules: [
+      {
+        name: 'が行（鼻浊音）',
+        desc: 'が行在词头读ga/gi/gu/ge/go，在词中或词尾常发鼻浊音（带鼻音的g）。现代日语中鼻浊音逐渐减少，年轻人多直接读g。',
+        examples: [
+          { word: 'がっこう', meaning: '学校' },
+          { word: 'かぎ', meaning: '钥匙' }
+        ]
+      },
+      {
+        name: 'ざ行·だ行',
+        desc: 'ざ行读za/ji/zu/ze/zo，だ行读da/ji/zu/de/do。注意じ和ぢ同音，ず和づ同音。',
+        examples: [
+          { word: 'じかん', meaning: '时间' },
+          { word: 'でんわ', meaning: '电话' }
+        ]
+      },
+      {
+        name: 'ば行·ぱ行',
+        desc: 'ば行是浊音ba/bi/bu/be/bo（不送气），ぱ行是半浊音pa/pi/pu/pe/po（送气，像汉语p）。',
+        examples: [
+          { word: 'ばん', meaning: '晚上' },
+          { word: 'パン', meaning: '面包' }
+        ]
+      }
+    ],
+    tip: '中国人最容易混淆ば行和ぱ行。ば行不送气（像汉语b），ぱ行送气（像汉语p）。用手放在嘴前，发ぱ行能感受到气流，ば行几乎感受不到。'
+  },
+  {
+    id: 'contracted',
+    title: '拗音',
+    icon: '🔗',
+    summary: 'い段假名 + 小写的ゃゅょ = 一个音节',
+    rules: [
+      {
+        name: '基本拗音',
+        desc: 'きゃ(kya)、きゅ(kyu)、きょ(kyo)等。拗音是一个音节，不是两个。き+ゃ=きゃ，发音时间与き相同，不能拆开读。',
+        examples: [
+          { word: 'きゃく', meaning: '客人' },
+          { word: 'しゅくだい', meaning: '作业' },
+          { word: 'ちゅうごく', meaning: '中国' }
+        ]
+      },
+      {
+        name: '浊音拗音',
+        desc: 'ぎゃ(gya)、びゃ(bya)、じゃ(ja)等。同样是一个音节，发音时快速连读。',
+        examples: [
+          { word: 'ぎゃく', meaning: '相反' },
+          { word: 'びょういん', meaning: '医院' },
+          { word: 'じゃあ', meaning: '那么' }
+        ]
+      }
+    ],
+    tip: '判断方法：小写的ゃゅょ前面的假名一定是い段（き、し、ち、に、ひ、み、り、ぎ、び、ぴ）。'
+  },
+  {
+    id: 'long',
+    title: '长音',
+    icon: '➡️',
+    summary: '元音延长一拍，长短音不同则词义不同',
+    rules: [
+      {
+        name: '长音组合规则',
+        desc: 'あ段+あ、い段+い、う段+う直接延长。え段+い（少数+え）、お段+う（少数+お）也构成长音。外来语用「ー」表示。',
+        examples: [
+          { word: 'おかあさん', meaning: '母亲' },
+          { word: 'おにいさん', meaning: '哥哥' },
+          { word: 'くうき', meaning: '空气' },
+          { word: 'せんせい', meaning: '老师' },
+          { word: 'おとうさん', meaning: '父亲' },
+          { word: 'コーヒー', meaning: '咖啡' }
+        ]
+      },
+      {
+        name: '长音改变词义',
+        desc: '长音不是简单的"拖长声音"，而是多一个节拍。长短音不同，意思完全不同。',
+        examples: [
+          { word: 'おばさん', meaning: '阿姨' },
+          { word: 'おばあさん', meaning: '奶奶' },
+          { word: 'きょう', meaning: '今天' },
+          { word: 'きょうこう', meaning: '强行' }
+        ]
+      }
+    ],
+    tip: '记忆口诀：あ段接あ、い段接い、う段接う、え段接い、お段接う。外来语一律用「ー」。'
+  },
+  {
+    id: 'geminate',
+    title: '促音',
+    icon: '⏸️',
+    summary: 'っ表示一个节拍的停顿，改变词义',
+    rules: [
+      {
+        name: '促音的发音',
+        desc: '小写的っ本身不发音，但占一个节拍。在っ后面的辅音前停顿一拍，形成"阻塞感"。类似于汉语"一克"中"克"前的停顿。',
+        examples: [
+          { word: 'がっこう', meaning: '学校' },
+          { word: 'ざっし', meaning: '杂志' },
+          { word: 'まって', meaning: '等等' },
+          { word: 'きって', meaning: '邮票' }
+        ]
+      },
+      {
+        name: '促音改变词义',
+        desc: '有无促音意思完全不同。',
+        examples: [
+          { word: 'さき', meaning: '前面' },
+          { word: 'さっき', meaning: '刚才' },
+          { word: 'きて', meaning: '穿着' },
+          { word: 'きって', meaning: '邮票' }
+        ]
+      }
+    ],
+    tip: '练习方法：先发出っ后面的假名，然后在前面"憋住"一拍。がっこう → が…（停顿）…こう。'
+  },
+  {
+    id: 'pitch',
+    title: '音调（高低音调）',
+    icon: '🎵',
+    summary: '日语用高低音调区分词义，类似汉语声调但更简单',
+    rules: [
+      {
+        name: '四种音调类型',
+        desc: '日语音调只有高(H)和低(L)两档。第一音节和第二音节一定不同高。共有四种基本类型：',
+        examples: [
+          { word: 'はな', meaning: '花（0型）' },
+          { word: 'はし', meaning: '筷子（1型）' },
+          { word: 'やま', meaning: '山（2型）' }
+        ],
+        pitchDemos: [
+          { label: '平板型(0)', word: 'はな', meaning: '花', pattern: ['L','H','H'] },
+          { label: '头高型(1)', word: 'はし', meaning: '筷子', pattern: ['H','L','L'] },
+          { label: '中高型(2)', word: 'やま', meaning: '山', pattern: ['L','H','L'] },
+          { label: '尾高型(0)', word: 'みせ', meaning: '店', pattern: ['L','L','H'] }
+        ]
+      },
+      {
+        name: '音调区分词义',
+        desc: '同样的假名，音调不同，意思完全不同。这是日语听说中非常重要的区分。',
+        examples: [
+          { word: 'あめ', meaning: '糖（0型·平板）' },
+          { word: 'あめ', meaning: '雨（1型·头高）' },
+          { word: 'じしん', meaning: '地震（0型）' },
+          { word: 'じしん', meaning: '自信（1型）' }
+        ]
+      }
+    ],
+    tip: '音调不需要死记硬背。学单词时跟着音频模仿，自然就能掌握。核心规律：第一个音节低是日语的基本节奏。'
+  }
+];
+
+function renderPronunciation() {
+  const container = document.getElementById('pronContent');
+  let html = '';
+  PRONUNCIATION_RULES.forEach((section, idx) => {
+    html += '<div class="pron-accordion">';
+    html += `<div class="pron-item${idx === 0 ? ' open' : ''}">`;
+    html += '<div class="pron-header" onclick="togglePronItem(this)">';
+    html += `<span class="pron-icon">${section.icon}</span>`;
+    html += `<span class="pron-title">${section.title}</span>`;
+    html += '<span class="pron-arrow">▶</span>';
+    html += '</div>';
+    html += '<div class="pron-body">';
+    html += `<div class="pron-desc">${section.summary}</div>`;
+    section.rules.forEach(rule => {
+      html += '<div class="pron-rule">';
+      html += `<div class="pron-rule-name">${rule.name}</div>`;
+      html += `<div class="pron-rule-desc">${rule.desc}</div>`;
+      if (rule.pitchDemos) {
+        rule.pitchDemos.forEach(demo => {
+          html += '<div style="margin:8px 0">';
+          html += `<div style="font-size:12px;color:var(--text);font-weight:600;margin-bottom:4px">${demo.label}：${demo.word}（${demo.meaning}）</div>`;
+          html += '<div class="pron-pitch-demo">';
+          demo.pattern.forEach((p, i) => {
+            const syl = demo.word[i] || '';
+            html += `<div class="pron-pitch-bar ${p === 'H' ? 'high' : 'low'}">${syl}</div>`;
+          });
+          html += '</div>';
+          html += '</div>';
+        });
+      }
+      html += '<div class="pron-examples">';
+      rule.examples.forEach(ex => {
+        html += `<div class="pron-example">
+          <span class="pron-ex-word">${ex.word}</span>
+          <span class="pron-ex-meaning">${ex.meaning}</span>
+          <button class="pron-ex-btn" onclick="event.stopPropagation();speak('${ex.word}')">🔊</button>
+        </div>`;
+      });
+      html += '</div>';
+      html += '</div>';
+    });
+    if (section.tip) {
+      html += `<div class="pron-tip">💡 ${section.tip}</div>`;
+    }
+    html += '</div></div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function togglePronItem(header) {
+  header.parentElement.classList.toggle('open');
 }
 
 // ====== Init ======
