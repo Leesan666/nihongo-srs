@@ -578,6 +578,158 @@ body {
   line-height: 1.6;
   margin-bottom: 20px;
 }
+
+/* ====== 五十音 Module ====== */
+.kana-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.kana-mode-tab {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.kana-mode-tab.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+.kana-type-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.kana-type-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.kana-type-btn.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.kana-chart {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 12px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+.kana-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.kana-row-label {
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--text-subtle);
+  font-weight: 600;
+}
+.kana-cell {
+  flex: 1;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.12s;
+  position: relative;
+}
+.kana-cell:active {
+  transform: scale(0.93);
+  background: var(--brand-soft);
+}
+.kana-cell.empty {
+  background: transparent;
+  cursor: default;
+}
+.kana-cell.empty:active { transform: none; }
+.kana-cell .kana-glyph {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.kana-cell .kana-roma {
+  font-size: 9px;
+  color: var(--text-subtle);
+  margin-top: 2px;
+}
+.kana-origin-hint {
+  font-size: 8px;
+  color: var(--text-subtle);
+  opacity: 0.6;
+  margin-top: 1px;
+}
+.kana-cell.learned::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.kana-cell.learning::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+.kana-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.kana-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.kana-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.kana-dot.learning { background: var(--warn); }
+.kana-dot.learned { background: var(--ok); }
+.kana-chart-tip {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-subtle);
+}
 </style>
 </head>
 <body>
@@ -589,6 +741,7 @@ body {
 
   <div class="tabs">
     <div class="tab active" data-tab="review">复习</div>
+    <div class="tab" data-tab="kana">五十音</div>
     <div class="tab" data-tab="list">词库</div>
     <div class="tab" data-tab="stats">统计</div>
     <div class="tab" data-tab="resources">资源</div>
@@ -642,6 +795,73 @@ body {
           <h2>今天的复习完成了！</h2>
           <p id="sessionSummary"></p>
           <button class="start-btn" onclick="showReviewHome()">返回</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kana View (五十音) -->
+    <div class="view" id="view-kana">
+      <div class="kana-mode-tabs">
+        <button class="kana-mode-tab active" onclick="switchKanaMode('chart')">五十音图</button>
+        <button class="kana-mode-tab" onclick="switchKanaMode('study')">学习/复习</button>
+      </div>
+      <div class="kana-type-toggle">
+        <button class="kana-type-btn active" onclick="switchKanaType('hiragana')">ひらがな</button>
+        <button class="kana-type-btn" onclick="switchKanaType('katakana')">カタカナ</button>
+      </div>
+
+      <!-- Chart Mode -->
+      <div id="kanaChartView"></div>
+
+      <!-- Study Mode -->
+      <div id="kanaStudyView" style="display:none">
+        <div id="kanaHome">
+          <div class="review-summary">
+            <h2>五十音复习</h2>
+            <div class="review-stats">
+              <div class="review-stat">
+                <span class="num due" id="kanaDueCount">0</span>
+                <span class="label">待复习</span>
+              </div>
+              <div class="review-stat">
+                <span class="num new" id="kanaNewCount">0</span>
+                <span class="label">新字符</span>
+              </div>
+              <div class="review-stat">
+                <span class="num done" id="kanaDoneCount">0</span>
+                <span class="label">已掌握</span>
+              </div>
+            </div>
+          </div>
+          <button class="start-btn" id="kanaStartBtn" onclick="startKanaReview()">开始学习</button>
+        </div>
+
+        <div id="kanaSession" style="display:none">
+          <div class="card-container">
+            <div class="card" id="kanaCard" onclick="flipKanaCard()">
+              <span class="card-tag" id="kanaCardTag"></span>
+              <div class="card-kanji" id="kanaChar" style="font-size:72px"></div>
+              <div class="card-meaning" id="kanaRomaji" style="font-size:28px"></div>
+              <div class="card-example" id="kanaOrigin" style="font-size:15px;font-weight:600;color:var(--brand)"></div>
+              <div class="card-example" id="kanaMnemonic" style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-top:4px"></div>
+              <div class="card-example" id="kanaWord" style="font-size:14px;color:var(--text);margin-top:8px"></div>
+              <div class="card-hint" id="kanaHint">点击卡片查看读音</div>
+              <button class="card-speak" onclick="event.stopPropagation(); speakKanaCurrent()">🔊 听读音</button>
+            </div>
+          </div>
+          <div class="review-btns" id="kanaReviewBtns">
+            <button class="review-btn btn-wrong" onclick="reviewKanaCard(false)">没记住</button>
+            <button class="review-btn btn-right" onclick="reviewKanaCard(true)">记住了</button>
+          </div>
+        </div>
+
+        <div id="kanaComplete" style="display:none">
+          <div class="session-complete">
+            <div class="check">✅</div>
+            <h2>五十音学习完成！</h2>
+            <p id="kanaSessionSummary"></p>
+            <button class="start-btn" onclick="showKanaHome()">返回</button>
+          </div>
         </div>
       </div>
     </div>
@@ -943,6 +1163,10 @@ function switchTab(tabName) {
   document.getElementById(`view-${tabName}`).classList.add('active');
   if (tabName === 'list') renderWordList();
   if (tabName === 'stats') renderStats();
+  if (tabName === 'kana') {
+    if (kanaMode === 'chart') renderKanaChart();
+    else showKanaHome();
+  }
 }
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1195,6 +1419,326 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 1500);
+}
+
+// ====== 五十音 Module ======
+const GOJUON_ROWS = [
+  { label: 'あ行', hira: ['あ','い','う','え','お'], kata: ['ア','イ','ウ','エ','オ'], roma: ['a','i','u','e','o'] },
+  { label: 'か行', hira: ['か','き','く','け','こ'], kata: ['カ','キ','ク','ケ','コ'], roma: ['ka','ki','ku','ke','ko'] },
+  { label: 'さ行', hira: ['さ','し','す','せ','そ'], kata: ['サ','シ','ス','セ','ソ'], roma: ['sa','shi','su','se','so'] },
+  { label: 'た行', hira: ['た','ち','つ','て','と'], kata: ['タ','チ','ツ','テ','ト'], roma: ['ta','chi','tsu','te','to'] },
+  { label: 'な行', hira: ['な','に','ぬ','ね','の'], kata: ['ナ','ニ','ヌ','ネ','ノ'], roma: ['na','ni','nu','ne','no'] },
+  { label: 'は行', hira: ['は','ひ','ふ','へ','ほ'], kata: ['ハ','ヒ','フ','ヘ','ホ'], roma: ['ha','hi','fu','he','ho'] },
+  { label: 'ま行', hira: ['ま','み','む','め','も'], kata: ['マ','ミ','ム','メ','モ'], roma: ['ma','mi','mu','me','mo'] },
+  { label: 'や行', hira: ['や','','ゆ','','よ'], kata: ['ヤ','','ユ','','ヨ'], roma: ['ya','','yu','','yo'] },
+  { label: 'ら行', hira: ['ら','り','る','れ','ろ'], kata: ['ラ','リ','ル','レ','ロ'], roma: ['ra','ri','ru','re','ro'] },
+  { label: 'わ行', hira: ['わ','を','ん','',''], kata: ['ワ','ヲ','ン','',''], roma: ['wa','wo','n','',''] }
+];
+
+// 字源联想数据：每个假名的汉字来源 + 记忆口诀 + 例词
+const GOJUON_DETAIL = {
+  'a':  { oH: '安', oK: '阿', hint: '"安"草写=あ，"阿"左耳旁=ア', word: 'あい', wordM: '爱' },
+  'i':  { oH: '以', oK: '伊', hint: '"以"去人旁=い，"伊"单人旁=イ', word: 'いぬ', wordM: '狗' },
+  'u':  { oH: '宇', oK: '宇', hint: '都来自"宇"，う像倒飞火柴人，ウ像宝盖头', word: 'うみ', wordM: '海' },
+  'e':  { oH: '衣', oK: '江', hint: '"衣"草写=え，"江"去三点水=工=エ', word: 'えき', wordM: '车站' },
+  'o':  { oH: '于', oK: '于', hint: '"于"变形=お，"于"右半=才=オ', word: 'おちゃ', wordM: '茶' },
+  'ka': { oH: '加', oK: '加', hint: '都来自"加"，か是草写，カ取"力"部', word: 'かぜ', wordM: '风' },
+  'ki': { oH: '几', oK: '几', hint: '都来自"几"，き草写多一横，キ楷书变形', word: 'きって', wordM: '邮票' },
+  'ku': { oH: '久', oK: '久', hint: '都来自"久"，く草写，ク取左上部', word: 'くつ', wordM: '鞋子' },
+  'ke': { oH: '计', oK: '介', hint: '"计"草写=け，"介"变形=ケ', word: 'けいかく', wordM: '计划' },
+  'ko': { oH: '己', oK: '己', hint: '都来自"己"，こ草写，コ取上框', word: 'ここ', wordM: '这里' },
+  'sa': { oH: '佐', oK: '散', hint: '"佐"草写=さ，"散"左上=サ', word: 'さかな', wordM: '鱼' },
+  'shi':{ oH: '之', oK: '之', hint: '都来自"之"，し草写连笔，シ三点变形', word: 'しごと', wordM: '工作' },
+  'su': { oH: '寸', oK: '须', hint: '"寸"草写=す，"须"左部=ス', word: 'すし', wordM: '寿司' },
+  'se': { oH: '世', oK: '世', hint: '都来自"世"，草写=せ，取上半=セ', word: 'せかい', wordM: '世界' },
+  'so': { oH: '其', oK: '曾', hint: '"其"草写=そ，"曾"上部=ソ', word: 'そら', wordM: '天空' },
+  'ta': { oH: '太', oK: '多', hint: '"太"草写=た，"多"上半=タ（像夕阳）', word: 'たべる', wordM: '吃' },
+  'chi':{ oH: '知', oK: '千', hint: '"知"草写=ち，"千"变形=チ', word: 'ちち', wordM: '父亲' },
+  'tsu':{ oH: '川', oK: '川', hint: '都来自"川"，つ草写连笔，ツ三点变形', word: 'つき', wordM: '月亮' },
+  'te': { oH: '天', oK: '天', hint: '都来自"天"，て草写，テ取上部', word: 'てんき', wordM: '天气' },
+  'to': { oH: '止', oK: '止', hint: '都来自"止"，と草写，ト取左竖横', word: 'とり', wordM: '鸟' },
+  'na': { oH: '奈', oK: '奈', hint: '都来自"奈"，な草写，ナ取上半', word: 'なつ', wordM: '夏天' },
+  'ni': { oH: '仁', oK: '二', hint: '"仁"草写=に，"二"=ニ（两横）', word: 'にわとり', wordM: '鸡' },
+  'nu': { oH: '奴', oK: '奴', hint: '都来自"奴"，ぬ草写，ヌ取左部', word: 'ぬいぐるみ', wordM: '玩偶' },
+  'ne': { oH: '祢', oK: '祢', hint: '都来自"祢"，ね草写，ネ取左示旁', word: 'ねこ', wordM: '猫' },
+  'no': { oH: '乃', oK: '乃', hint: '都来自"乃"，の草写圆转，ノ就是一撇', word: 'のみもの', wordM: '饮料' },
+  'ha': { oH: '波', oK: '八', hint: '"波"草写=は，"八"=ハ', word: 'はな', wordM: '花' },
+  'hi': { oH: '比', oK: '比', hint: '都来自"比"，ひ草写，ヒ取左半', word: 'ひだり', wordM: '左' },
+  'fu': { oH: '不', oK: '不', hint: '都来自"不"，ふ草写，フ取上横撇', word: 'ふゆ', wordM: '冬天' },
+  'he': { oH: '部', oK: '部', hint: '都来自"部"，へ和へ形状几乎相同', word: 'へや', wordM: '房间' },
+  'ho': { oH: '保', oK: '保', hint: '都来自"保"，ほ草写，ホ取下部木', word: 'ほん', wordM: '书' },
+  'ma': { oH: '末', oK: '万', hint: '"末"草写=ま，"万"变形=マ', word: 'まど', wordM: '窗户' },
+  'mi': { oH: '美', oK: '三', hint: '"美"草写=み，"三"=ミ', word: 'みず', wordM: '水' },
+  'mu': { oH: '武', oK: '牟', hint: '"武"草写=む，"牟"上部=ム', word: 'むし', wordM: '虫子' },
+  'me': { oH: '女', oK: '女', hint: '都来自"女"，め草写，メ取交叉形', word: 'めがね', wordM: '眼镜' },
+  'mo': { oH: '毛', oK: '毛', hint: '都来自"毛"，形状相似', word: 'もち', wordM: '年糕' },
+  'ya': { oH: '也', oK: '也', hint: '都来自"也"，や草写，ヤ取上部', word: 'やま', wordM: '山' },
+  'yu': { oH: '由', oK: '由', hint: '都来自"由"，ゆ草写圆转，ユ取上部', word: 'ゆび', wordM: '手指' },
+  'yo': { oH: '与', oK: '与', hint: '都来自"与"，よ草写，ヨ取下部', word: 'よる', wordM: '夜晚' },
+  'ra': { oH: '良', oK: '良', hint: '都来自"良"，ら草写，ラ取上部', word: 'らいしゅう', wordM: '下周' },
+  'ri': { oH: '利', oK: '利', hint: '都来自"利"，り草写，リ取左禾旁', word: 'りんご', wordM: '苹果' },
+  'ru': { oH: '留', oK: '流', hint: '"留"草写=る，"流"右下=ル', word: 'るす', wordM: '不在家' },
+  're': { oH: '礼', oK: '礼', hint: '都来自"礼"，れ草写，レ取右弯钩', word: 'れきし', wordM: '历史' },
+  'ro': { oH: '吕', oK: '吕', hint: '都来自"吕"，ろ草写，ロ取下口=方框', word: 'ろく', wordM: '六' },
+  'wa': { oH: '和', oK: '和', hint: '都来自"和"，わ草写，ワ取右口', word: 'わたし', wordM: '我' },
+  'wo': { oH: '远', oK: '乎', hint: '"远"草写=を，"乎"变形=ヲ', word: '—', wordM: '语法助词，不单独成词' },
+  'n':  { oH: '无', oK: '尔', hint: '"无"草写=ん，"尔"下部=ン', word: '—', wordM: '尾音n，不单独成词' },
+};
+
+const KANA_STORAGE_KEY = 'nihongo_srs_kana';
+
+function loadKanaData() {
+  const cards = [];
+  GOJUON_ROWS.forEach(row => {
+    for (let i = 0; i < 5; i++) {
+      if (!row.hira[i]) continue;
+      const d = GOJUON_DETAIL[row.roma[i]] || {};
+      cards.push({
+        hira: row.hira[i], kata: row.kata[i], roma: row.roma[i],
+        oH: d.oH || '', oK: d.oK || '', hint: d.hint || '', word: d.word || '', wordM: d.wordM || '',
+        srsStage: 0, interval: 0, nextReview: 0, lastReview: 0,
+        reviews: 0, correctCount: 0, wrongCount: 0
+      });
+    }
+  });
+  try {
+    const saved = JSON.parse(localStorage.getItem(KANA_STORAGE_KEY));
+    if (saved && saved.cards) {
+      saved.cards.forEach(sc => {
+        const card = cards.find(c => c.roma === sc.roma);
+        if (card) {
+          card.srsStage = sc.srsStage || 0;
+          card.interval = sc.interval || 0;
+          card.nextReview = sc.nextReview || 0;
+          card.lastReview = sc.lastReview || 0;
+          card.reviews = sc.reviews || 0;
+          card.correctCount = sc.correctCount || 0;
+          card.wrongCount = sc.wrongCount || 0;
+        }
+      });
+    }
+  } catch(e) {}
+  return { cards };
+}
+
+let kanaState = loadKanaData();
+let kanaMode = 'chart';
+let kanaType = 'hiragana';
+let kanaSession = { queue: [], currentIndex: 0, doneCount: 0, newStudied: 0, reviewedCorrect: 0, reviewedTotal: 0 };
+
+function saveKanaData() {
+  localStorage.setItem(KANA_STORAGE_KEY, JSON.stringify(kanaState));
+}
+
+function switchKanaMode(mode) {
+  kanaMode = mode;
+  document.querySelectorAll('.kana-mode-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.kana-mode-tab')[mode === 'chart' ? 0 : 1].classList.add('active');
+  if (mode === 'chart') {
+    document.getElementById('kanaChartView').style.display = 'block';
+    document.getElementById('kanaStudyView').style.display = 'none';
+    renderKanaChart();
+  } else {
+    document.getElementById('kanaChartView').style.display = 'none';
+    document.getElementById('kanaStudyView').style.display = 'block';
+    showKanaHome();
+  }
+}
+
+function switchKanaType(type) {
+  kanaType = type;
+  document.querySelectorAll('.kana-type-btn').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.kana-type-btn')[type === 'hiragana' ? 0 : 1].classList.add('active');
+  if (kanaMode === 'chart') renderKanaChart();
+}
+
+function renderKanaChart() {
+  const container = document.getElementById('kanaChartView');
+  let html = '<div class="kana-chart">';
+  GOJUON_ROWS.forEach(row => {
+    html += '<div class="kana-row">';
+    html += `<div class="kana-row-label">${row.label}</div>`;
+    for (let i = 0; i < 5; i++) {
+      if (!row.hira[i]) {
+        html += '<div class="kana-cell empty"></div>';
+        continue;
+      }
+      const char = kanaType === 'hiragana' ? row.hira[i] : row.kata[i];
+      const roma = row.roma[i];
+      const card = kanaState.cards.find(c => c.roma === roma);
+      let statusClass = '';
+      if (card) {
+        if (card.reviews > 0 && card.interval >= 7) statusClass = 'learned';
+        else if (card.reviews > 0) statusClass = 'learning';
+      }
+      const detail = GOJUON_DETAIL[roma] || {};
+      const originChar = kanaType === 'hiragana' ? detail.oH : detail.oK;
+      html += `<div class="kana-cell ${statusClass}" onclick="speak('${char}')">
+        <span class="kana-glyph">${char}</span>
+        <span class="kana-roma">${roma}</span>
+        <span class="kana-origin-hint">${originChar || ''}</span>
+      </div>`;
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="kana-legend">';
+  html += '<span class="kana-legend-item"><span class="kana-dot learning"></span>学习中</span>';
+  html += '<span class="kana-legend-item"><span class="kana-dot learned"></span>已掌握</span>';
+  html += '<p class="kana-chart-tip">点击听发音 · 小字为字源汉字</p>';
+  html += '</div>';
+
+  const learned = kanaState.cards.filter(c => c.reviews > 0 && c.interval >= 7).length;
+  const learning = kanaState.cards.filter(c => c.reviews > 0 && c.interval < 7).length;
+  const total = kanaState.cards.length;
+  html += `<div class="review-summary" style="margin-top:12px">
+    <h2>学习进度</h2>
+    <div class="review-stats">
+      <div class="review-stat">
+        <span class="num due" style="color:var(--text-subtle)">${total - learned - learning}</span>
+        <span class="label">未学</span>
+      </div>
+      <div class="review-stat">
+        <span class="num new" style="color:var(--warn)">${learning}</span>
+        <span class="label">学习中</span>
+      </div>
+      <div class="review-stat">
+        <span class="num done" style="color:var(--ok)">${learned}</span>
+        <span class="label">已掌握</span>
+      </div>
+    </div>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function getKanaDueCards() {
+  const now = Date.now();
+  return kanaState.cards.filter(c => c.nextReview <= now && c.reviews > 0);
+}
+
+function getKanaNewCardsAvailable() {
+  return kanaState.cards.filter(c => c.reviews === 0).length;
+}
+
+function showKanaHome() {
+  document.getElementById('kanaHome').style.display = 'block';
+  document.getElementById('kanaSession').style.display = 'none';
+  document.getElementById('kanaComplete').style.display = 'none';
+
+  const due = getKanaDueCards().length;
+  const newAvail = getKanaNewCardsAvailable();
+  const learned = kanaState.cards.filter(c => c.reviews > 0 && c.interval >= 7).length;
+
+  document.getElementById('kanaDueCount').textContent = due;
+  document.getElementById('kanaNewCount').textContent = newAvail;
+  document.getElementById('kanaDoneCount').textContent = learned;
+
+  const btn = document.getElementById('kanaStartBtn');
+  if (due === 0 && newAvail === 0) {
+    btn.disabled = true;
+    btn.textContent = '五十音全部掌握！';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `开始学习（${due + Math.min(newAvail, 10)}张）`;
+  }
+}
+
+function startKanaReview() {
+  const due = getKanaDueCards();
+  const newCards = kanaState.cards.filter(c => c.reviews === 0).slice(0, 10);
+  kanaSession.queue = [...due, ...newCards];
+  kanaSession.queue.sort(() => Math.random() - 0.5);
+  kanaSession.currentIndex = 0;
+  kanaSession.doneCount = 0;
+  kanaSession.newStudied = 0;
+  kanaSession.reviewedCorrect = 0;
+  kanaSession.reviewedTotal = 0;
+
+  if (kanaSession.queue.length === 0) {
+    showToast('没有需要复习的字符');
+    return;
+  }
+
+  document.getElementById('kanaHome').style.display = 'none';
+  document.getElementById('kanaSession').style.display = 'block';
+  showCurrentKanaCard();
+}
+
+function showCurrentKanaCard() {
+  if (kanaSession.currentIndex >= kanaSession.queue.length) {
+    completeKanaSession();
+    return;
+  }
+  const card = kanaSession.queue[kanaSession.currentIndex];
+  const char = kanaType === 'hiragana' ? card.hira : card.kata;
+  const stage = card.reviews === 0 ? 'new' : (card.interval < 7 ? 'learning' : 'mature');
+
+  const tag = document.getElementById('kanaCardTag');
+  if (stage === 'new') {
+    tag.textContent = '新字符';
+    tag.className = 'card-tag new-tag';
+  } else {
+    tag.textContent = `复习 · 第${card.reviews}次`;
+    tag.className = 'card-tag';
+  }
+
+  document.getElementById('kanaChar').textContent = char;
+  document.getElementById('kanaRomaji').textContent = card.roma;
+  document.getElementById('kanaOrigin').textContent = `字源：${card.hira}←${card.oH}  ${card.kata}←${card.oK}`;
+  document.getElementById('kanaMnemonic').textContent = card.hint;
+  document.getElementById('kanaWord').innerHTML = card.word !== '—'
+    ? `例：<strong>${card.word}</strong> = ${card.wordM}`
+    : card.wordM;
+
+  const flashcard = document.getElementById('kanaCard');
+  flashcard.classList.remove('flipped');
+  document.getElementById('kanaHint').textContent = '点击卡片查看读音';
+  document.getElementById('kanaReviewBtns').classList.remove('show');
+
+  setTimeout(() => speak(char), 300);
+}
+
+function flipKanaCard() {
+  const flashcard = document.getElementById('kanaCard');
+  if (!flashcard.classList.contains('flipped')) {
+    flashcard.classList.add('flipped');
+    document.getElementById('kanaHint').textContent = '';
+    document.getElementById('kanaReviewBtns').classList.add('show');
+  }
+}
+
+function speakKanaCurrent() {
+  const card = kanaSession.queue[kanaSession.currentIndex];
+  if (card) {
+    const char = kanaType === 'hiragana' ? card.hira : card.kata;
+    speak(char);
+  }
+}
+
+function reviewKanaCard(correct) {
+  const card = kanaSession.queue[kanaSession.currentIndex];
+  const wasNew = card.reviews === 0;
+  scheduleCard(card, correct);
+
+  kanaSession.doneCount++;
+  if (wasNew) kanaSession.newStudied++;
+  kanaSession.reviewedTotal++;
+  if (correct) kanaSession.reviewedCorrect++;
+
+  saveKanaData();
+
+  kanaSession.currentIndex++;
+  setTimeout(showCurrentKanaCard, 200);
+}
+
+function completeKanaSession() {
+  document.getElementById('kanaSession').style.display = 'none';
+  document.getElementById('kanaComplete').style.display = 'block';
+  const accuracy = kanaSession.reviewedTotal > 0 ? Math.round(kanaSession.reviewedCorrect / kanaSession.reviewedTotal * 100) : 100;
+  document.getElementById('kanaSessionSummary').innerHTML =
+    `完成 ${kanaSession.doneCount} 个字符<br>新学 ${kanaSession.newStudied} · 正确率 ${accuracy}%`;
 }
 
 // ====== Init ======
